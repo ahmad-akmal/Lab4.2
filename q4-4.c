@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<netdb.h>
 #include<string.h>      //strlen
 #include<sys/socket.h>
 #include<arpa/inet.h>   //inet_addr
@@ -6,6 +7,37 @@
 #include<netinet/in.h>
 #include<sys/types.h>
 #include<stdlib.h>
+#define MAX 80
+
+// Function designed for chat between client and server. 
+void func(int sockfd) 
+{ 
+    char buff[MAX]; 
+    int n; 
+    // infinite loop for chat 
+    for (;;) { 
+        bzero(buff, MAX); 
+  
+        // read the message from client and copy it in buffer 
+        read(sockfd, buff, sizeof(buff)); 
+        // print buffer which contains the client contents 
+        printf("From client: %s\t To client : ", buff); 
+        bzero(buff, MAX); 
+        n = 0; 
+        // copy server message in the buffer 
+        while ((buff[n++] = getchar()) != '\n') 
+            ; 
+  
+        // and send that buffer to client 
+        write(sockfd, buff, sizeof(buff)); 
+  
+        // if msg contains "Exit" then server exit and chat ended. 
+        if (strncmp("exit", buff, 4) == 0) { 
+            printf("Server Exit...\n"); 
+            break; 
+        } 
+    } 
+} 
 
 int main(int argc , char *argv[])
 {
@@ -40,9 +72,8 @@ int main(int argc , char *argv[])
           exit(EXIT_FAILURE);
          }
          printf("SO_KEEPALIVE set on socket\n");
-
-
-        /* Check the status again */
+         
+       /* Check the status again */
        if(getsockopt(socket_desc, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
        perror("getsockopt()");
        close(socket_desc);
@@ -68,20 +99,22 @@ int main(int argc , char *argv[])
         //Accept and incoming connection
         puts("Waiting for incoming connections...");
         c = sizeof(struct sockaddr_in);
-        while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
-        {
+        new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
+        /*{
                 puts("Connection accepted");
 
                 //Reply to the client
                 message = "Hello Client , I have received your connection. But I have to go now, bye\n";
                 write(new_socket , message , strlen(message));
-        }
-
+        }*/
         if (new_socket<0)
         {
                 perror("accept failed");
                 return 1;
         }
+        printf("Server accept the client...\n");
+        // Function for chatting between client and server 
+        func(new_socket); 
         close(socket_desc);
         return 0;
 }
